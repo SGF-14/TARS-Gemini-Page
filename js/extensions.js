@@ -178,6 +178,7 @@ const Editors = (() => {
   const fnModal = document.getElementById("fn-modal");
   const fnListView = document.getElementById("fn-list-view");
   const fnEditView = document.getElementById("fn-edit-view");
+  const fnRefView = document.getElementById("fn-ref-view");
   const fnList = document.getElementById("fn-list");
   const fnEmpty = document.getElementById("fn-empty");
   const fnText = document.getElementById("fn-text");
@@ -242,29 +243,34 @@ const Editors = (() => {
     });
   }
 
+  function showView(view) {
+    fnListView.hidden = view !== "list";
+    fnEditView.hidden = view !== "edit";
+    fnRefView.hidden = view !== "ref";
+  }
+
   function openEdit(index) {
     editIndex = index;
     const list = FunctionStore.load();
     fnText.value = index >= 0 ? JSON.stringify(list[index].decl, null, 2) : FUNCTION_TEMPLATE;
     fnEditor.render();
     fnError.hidden = true;
-    fnListView.hidden = true;
-    fnEditView.hidden = false;
+    showView("edit");
     fnText.focus();
   }
 
   function backToList() {
-    fnEditView.hidden = true;
-    fnListView.hidden = false;
+    showView("list");
     renderList();
   }
 
   document.getElementById("btn-functions").addEventListener("click", () => {
     renderList();
-    fnEditView.hidden = true;
-    fnListView.hidden = false;
+    showView("list");
     fnModal.hidden = false;
   });
+  document.getElementById("fn-view-builtins").addEventListener("click", () => showView("ref"));
+  document.getElementById("fn-ref-back").addEventListener("click", backToList);
   document.getElementById("fn-add").addEventListener("click", () => openEdit(-1));
   document.getElementById("fn-example").addEventListener("click", () => {
     const list = FunctionStore.load();
@@ -298,7 +304,7 @@ const Editors = (() => {
     if (e.key !== "Escape") return;
     if (!modal.hidden) close();
     else if (!fnModal.hidden) {
-      if (!fnEditView.hidden) backToList();
+      if (!fnEditView.hidden || !fnRefView.hidden) backToList();
       else fnModal.hidden = true;
     }
   });

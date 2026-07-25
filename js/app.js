@@ -57,6 +57,9 @@ document.addEventListener("DOMContentLoaded", () => {
     chatPanel.classList.toggle("open");
     if (chatPanel.classList.contains("open")) chatInput.focus();
   });
+  document.getElementById("chat-close").addEventListener("click", () => {
+    chatPanel.classList.remove("open");
+  });
 
   function addMsg(role, text, extraClass = "") {
     const div = document.createElement("div");
@@ -158,6 +161,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const dtMenu = document.getElementById("devtools-menu");
   document.getElementById("devtools-toggle").addEventListener("click", () => {
     dtMenu.hidden = !dtMenu.hidden;
+  });
+  // clicking anywhere outside closes the menu (same feel as the modals)
+  document.addEventListener("pointerdown", (e) => {
+    if (!dtMenu.hidden && !e.target.closest("#devtools")) dtMenu.hidden = true;
   });
   document.getElementById("btn-demo").addEventListener("click", () => tars.demo());
 

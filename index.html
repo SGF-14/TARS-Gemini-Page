@@ -76,7 +76,7 @@
 
   <!-- chat panel -->
   <aside id="chat-panel">
-    <header>TARS <span class="dim">// transmission log</span><button id="chat-clear" type="button">CLEAR</button></header>
+    <header>TARS <span class="dim">// transmission log</span><button id="chat-clear" type="button">CLEAR</button><button id="chat-close" type="button" title="Close">✕</button></header>
     <div id="messages"></div>
     <form id="chat-form" autocomplete="off">
       <input id="chat-input" type="text" placeholder="Type a message…" />
@@ -121,17 +121,21 @@
       <div id="fn-list-view">
         <div id="fn-list"></div>
         <div id="fn-empty" class="vm-note" hidden>No functions yet — ADD one or LOAD EXAMPLE.</div>
-        <details id="fn-builtins">
-          <summary>BUILT-IN FUNCTIONS — what the robot can actually run</summary>
-          <p class="vm-note">These implementations exist in the page (shown here Python-style for
-             readability). Declare a function with one of these names and the model can trigger it —
-             use them as the pattern for your own.</p>
-          <div id="fn-builtins-list"></div>
-        </details>
+        <button id="fn-view-builtins" type="button">📖 BUILT-IN FUNCTIONS — see what the robot can run</button>
         <div class="vm-actions">
           <button id="fn-add" type="button">+ ADD FUNCTION</button>
           <button id="fn-example" type="button">LOAD EXAMPLE</button>
           <button id="fn-close" type="button">CLOSE</button>
+        </div>
+      </div>
+
+      <div id="fn-ref-view" hidden>
+        <p class="vm-note">These implementations exist in the page (shown Python-style for
+           readability). Declare a function with one of these names and the model can trigger it —
+           copy the pattern when building your own.</p>
+        <div id="fn-builtins-list"></div>
+        <div class="vm-actions">
+          <button id="fn-ref-back" type="button">← BACK</button>
         </div>
       </div>
 

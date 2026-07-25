@@ -267,6 +267,17 @@ a { color: var(--green); }
   background: none; border: none; cursor: pointer;
 }
 #chat-clear:hover { color: var(--red); }
+#chat-close {
+  margin-left: 10px;
+  width: 28px; height: 28px;
+  font-family: var(--mono); font-size: 14px;
+  color: rgba(232,245,234,0.55);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+#chat-close:hover { color: var(--green); border-color: var(--line); }
 
 #messages {
   flex: 1;
@@ -509,37 +520,38 @@ a { color: var(--green); }
 .tok-def { color: #6fd3ff; }
 
 /* ---------- built-in function reference (Python-style) ---------- */
-#fn-builtins {
+#fn-view-builtins {
+  width: 100%;
   margin: 10px 0 4px;
-  border: 1px solid rgba(57, 255, 90, 0.15);
-  border-radius: 8px;
+  padding: 11px 14px;
+  text-align: left;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px;
+  color: rgba(57, 255, 90, 0.8);
   background: rgba(0, 0, 0, 0.25);
-}
-#fn-builtins summary {
-  padding: 9px 12px;
-  font-size: 10px; letter-spacing: 2px;
-  color: rgba(57, 255, 90, 0.7);
+  border: 1px dashed rgba(57, 255, 90, 0.35);
+  border-radius: 8px;
   cursor: pointer;
-  user-select: none;
+  transition: border-color 0.2s, color 0.2s;
 }
-#fn-builtins summary:hover { color: var(--green); }
-#fn-builtins > p { padding: 0 12px; }
+#fn-view-builtins:hover { color: var(--green); border-color: var(--green); }
+
 #fn-builtins-list {
-  display: flex; flex-direction: column; gap: 8px;
-  max-height: 300px;
+  display: flex; flex-direction: column; gap: 12px;
+  max-height: min(62vh, 560px);
   overflow-y: auto;
-  padding: 4px 10px 12px;
+  margin-top: 10px;
+  padding-right: 4px;
   scrollbar-width: thin;
   scrollbar-color: var(--green-dim) transparent;
 }
 .py-code {
   margin: 0;
-  padding: 10px 12px;
-  font-family: var(--mono); font-size: 11px; line-height: 1.6;
+  padding: 13px 15px;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
   color: #cfe8d3;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(57, 255, 90, 0.12);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow-x: auto;
   white-space: pre;
   user-select: text;
