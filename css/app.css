@@ -795,8 +795,9 @@ html[lang="ar"] #em-text { font-family: var(--sans); }
   #tars-root { transform: scale(0.62); transform-origin: bottom center; }
   #stage { padding-bottom: 20vh; }
 
+  /* below the status pill / top buttons so the wordmark stays visible */
+  #header { top: 58px; }
   #header h1 { font-size: 18px; letter-spacing: 9px; padding-left: 9px; }
-  #header p { font-size: 8px; letter-spacing: 4px; }
 
   #status {
     top: 12px; left: 12px;
@@ -808,7 +809,7 @@ html[lang="ar"] #em-text { font-family: var(--sans); }
   #bgm-toggle { top: 12px; right: 12px; width: 36px; height: 36px; }
   #lang-toggle { top: 12px; right: 54px; width: 36px; height: 36px; font-size: 13px; }
 
-  #devtools { top: 50px; left: 12px; width: min(230px, 62vw); }
+  #devtools { top: 92px; left: 12px; width: min(230px, 62vw); } /* below the wordmark row */
   #devtools-menu { max-height: 55vh; overflow-y: auto; }
 
   #controls {

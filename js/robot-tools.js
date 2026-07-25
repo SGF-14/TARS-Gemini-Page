@@ -49,9 +49,9 @@ const ROBOT_TOOL_DECLS = [
       required: ["sides", "px"],
     },
   },
-  // No-argument functions omit `parameters` entirely (the API rejects empty OBJECT schemas).
-  { name: "demo", description: "Show-off routine: body rises, all columns spin 360, settle." },
-  { name: "stop", description: "Cancel all motion and return to the neutral pose." },
+  // demo and stop are intentionally NOT in the example: their implementations
+  // exist (see BUILT-IN FUNCTIONS) - declaring them is left as an exercise.
+  // Reminder: no-argument functions omit `parameters` entirely.
 ];
 
 /* Python-style reference of the built-in implementations, shown (syntax-colored)
