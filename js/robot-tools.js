@@ -119,6 +119,37 @@ const FUNCTION_TEMPLATE = JSON.stringify({
   },
 }, null, 2);
 
+/** Normalize a declaration into Gemini's exact shape. Forgives common
+ *  other-API habits: Claude's `input_schema`, lowercase schema types,
+ *  and empty OBJECT parameter schemas (which Gemini rejects). */
+function normalizeDecl(decl) {
+  const out = { name: decl.name };
+  if (decl.description) out.description = decl.description;
+
+  let params = decl.parameters ?? decl.input_schema ?? decl.inputSchema; // Claude/OpenAI spellings
+  if (params && typeof params === "object") {
+    params = normalizeSchema(params);
+    const noProps = String(params.type).toUpperCase() === "OBJECT" &&
+      (!params.properties || !Object.keys(params.properties).length);
+    if (!noProps) out.parameters = params; // empty OBJECT schema → omit entirely
+  }
+  return out;
+}
+
+function normalizeSchema(s) {
+  const out = { ...s };
+  if (typeof out.type === "string") out.type = out.type.toUpperCase();
+  if (out.properties && typeof out.properties === "object") {
+    out.properties = Object.fromEntries(
+      Object.entries(out.properties).map(([k, v]) => [k, normalizeSchema(v)])
+    );
+    if (!Object.keys(out.properties).length) delete out.properties;
+  }
+  if (out.items && typeof out.items === "object") out.items = normalizeSchema(out.items);
+  if (Array.isArray(out.required) && !out.required.length) delete out.required;
+  return out;
+}
+
 /** Validate ONE function declaration (the fn-editor's unit of editing). */
 function parseSingleFunction(text) {
   let decl;
@@ -133,7 +164,7 @@ function parseSingleFunction(text) {
   if (typeof decl.name !== "string" || !decl.name.trim()) {
     return { error: "The declaration needs a string \"name\"." };
   }
-  return { decl };
+  return { decl: normalizeDecl(decl) };
 }
 
 /** The saved FUNCTIONS list: [{enabled: bool, decl: {...}}, ...] */
@@ -144,12 +175,14 @@ const FunctionStore = (() => {
     try {
       const data = JSON.parse(raw);
       if (Array.isArray(data) && (!data.length || "enabled" in (data[0] || {}))) {
-        return data.filter((it) => it && it.decl && typeof it.decl.name === "string");
+        return data
+          .filter((it) => it && it.decl && typeof it.decl.name === "string")
+          .map((it) => ({ enabled: it.enabled, decl: normalizeDecl(it.decl) })); // heal saved entries too
       }
       // migrate the old format (a raw declarations array / tools object)
       const parsed = parseToolsJson(raw);
       if (parsed.decls) {
-        const list = parsed.decls.map((decl) => ({ enabled: true, decl }));
+        const list = parsed.decls.map((decl) => ({ enabled: true, decl: normalizeDecl(decl) }));
         save(list);
         return list;
       }
