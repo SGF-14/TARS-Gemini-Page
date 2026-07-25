@@ -8,6 +8,7 @@ const Store = (() => {
     rag: "tars.ext.rag",
     functions: "tars.ext.functions",
     personalize: "tars.ext.personalize",
+    music: "tars.ui.music",
   };
 
   function get(key) {

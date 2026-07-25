@@ -2,7 +2,7 @@
 // FUNCTIONS editor, JSON validation, and the functionCall → robot executor.
 "use strict";
 
-const ROBOT_TOOL_EXAMPLE = JSON.stringify([
+const ROBOT_TOOL_DECLS = [
   {
     name: "walk",
     description: "Walk forward like TARS in the film. One call performs the full step cycle.",
@@ -40,7 +40,68 @@ const ROBOT_TOOL_EXAMPLE = JSON.stringify([
   // No-argument functions omit `parameters` entirely (the API rejects empty OBJECT schemas).
   { name: "demo", description: "Show-off routine: body rises, all columns spin 360, settle." },
   { name: "stop", description: "Cancel all motion and return to the neutral pose." },
-], null, 2);
+];
+
+const FUNCTION_TEMPLATE = JSON.stringify({
+  name: "myFunction",
+  description: "What this function does - the model reads this to decide when to call it.",
+  parameters: {
+    type: "OBJECT",
+    properties: {
+      arg: { type: "STRING", description: "What this argument means" },
+    },
+  },
+}, null, 2);
+
+/** Validate ONE function declaration (the fn-editor's unit of editing). */
+function parseSingleFunction(text) {
+  let decl;
+  try {
+    decl = JSON.parse(text);
+  } catch (e) {
+    return { error: `Not valid JSON: ${e.message}` };
+  }
+  if (Array.isArray(decl) || typeof decl !== "object" || decl === null) {
+    return { error: "Expected ONE function declaration object: { \"name\": ..., \"description\": ... }" };
+  }
+  if (typeof decl.name !== "string" || !decl.name.trim()) {
+    return { error: "The declaration needs a string \"name\"." };
+  }
+  return { decl };
+}
+
+/** The saved FUNCTIONS list: [{enabled: bool, decl: {...}}, ...] */
+const FunctionStore = (() => {
+  function load() {
+    const raw = Store.get("functions");
+    if (!raw) return [];
+    try {
+      const data = JSON.parse(raw);
+      if (Array.isArray(data) && (!data.length || "enabled" in (data[0] || {}))) {
+        return data.filter((it) => it && it.decl && typeof it.decl.name === "string");
+      }
+      // migrate the old format (a raw declarations array / tools object)
+      const parsed = parseToolsJson(raw);
+      if (parsed.decls) {
+        const list = parsed.decls.map((decl) => ({ enabled: true, decl }));
+        save(list);
+        return list;
+      }
+    } catch { /* fall through */ }
+    return [];
+  }
+
+  function save(list) {
+    if (!list.length) Store.remove("functions");
+    else Store.set("functions", JSON.stringify(list));
+  }
+
+  function activeDecls() {
+    return load().filter((it) => it.enabled).map((it) => it.decl);
+  }
+
+  return { load, save, activeDecls };
+})();
 
 /** Parse + normalize the FUNCTIONS editor content into a declarations array.
  *  Accepts: a bare array, {"functionDeclarations":[...]}, or [{"functionDeclarations":[...]}]. */

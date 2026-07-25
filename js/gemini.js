@@ -48,11 +48,19 @@ const GeminiAPI = (() => {
   }
 
   function pickDefaultModel(models) {
-    const prefer = ["models/gemini-2.5-flash", "models/gemini-flash-latest", "models/gemini-2.0-flash"];
-    for (const p of prefer) {
-      if (models.some((m) => m.name === p)) return p;
-    }
-    return models[0]?.name || "";
+    // Prefer the rolling "latest" alias, then the newest numbered flash model.
+    // (Fixed names go stale: e.g. gemini-2.5-flash became unavailable to new users.)
+    const exact = models.find((m) => m.name === "models/gemini-flash-latest");
+    if (exact) return exact.name;
+
+    const flash = models
+      .map((m) => ({ name: m.name, v: /gemini-(\d+(?:\.\d+)?)-flash$/.exec(m.name)?.[1] }))
+      .filter((m) => m.v)
+      .sort((a, b) => parseFloat(b.v) - parseFloat(a.v));
+    if (flash.length) return flash[0].name;
+
+    const anyFlash = models.find((m) => /flash/.test(m.name) && !/preview|exp|8b|lite/.test(m.name));
+    return anyFlash?.name || models[0]?.name || "";
   }
 
   /** Assemble a generateContent body. Extensions are included ONLY when non-empty. */

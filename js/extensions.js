@@ -1,8 +1,41 @@
-// The three extension editors (RAG / FUNCTIONS / PERSONALIZE) share one modal.
-// Whatever the user saves here is injected into every Gemini call - but ONLY
-// while it is non-empty. Empty = the model never sees it.
+// Extension editors. RAG and PERSONALIZE share one plain-text modal; FUNCTIONS
+// has its own manager: a list of declarations, each with an on/off switch and
+// a delete button, edited one at a time in a code-colored JSON editor.
+// Whatever is saved here reaches the model ONLY while non-empty / switched on.
 "use strict";
 
+/* ---------------- tiny JSON syntax highlighter ---------------- */
+function highlightJson(src) {
+  const esc = src.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return esc.replace(
+    /("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|-?\b\d+\.?\d*(?:[eE][+-]?\d+)?\b/g,
+    (m, str, colon, kw) => {
+      if (str) {
+        return colon
+          ? `<span class="tok-key">${str}</span>${colon}`
+          : `<span class="tok-str">${str}</span>`;
+      }
+      if (kw) return `<span class="tok-kw">${kw}</span>`;
+      return `<span class="tok-num">${m}</span>`;
+    }
+  );
+}
+
+function initCodeEditor(textarea, pre) {
+  const code = pre.querySelector("code");
+  function render() {
+    // trailing newline keeps the overlay height in sync while typing at the end
+    code.innerHTML = highlightJson(textarea.value) + "\n";
+  }
+  textarea.addEventListener("input", render);
+  textarea.addEventListener("scroll", () => {
+    pre.scrollTop = textarea.scrollTop;
+    pre.scrollLeft = textarea.scrollLeft;
+  });
+  return { render };
+}
+
+/* ---------------- generic text editors: RAG + PERSONALIZE ---------------- */
 const EXTENSIONS = {
   rag: {
     key: "rag",
@@ -15,15 +48,6 @@ const EXTENSIONS = {
       "Docking code: CASE-3-3-1.\nWormhole located near Saturn, 14 months out.\n" +
       "Plan A: gravity equation. Plan B: population bomb.",
     maxWarn: 200_000,
-  },
-  functions: {
-    key: "functions",
-    button: "btn-functions",
-    title: "FUNCTIONS — ROBOT TOOLS",
-    hint: "Gemini function declarations (JSON). While non-empty and valid, the model can call these to drive the robot — try “walk two steps then introduce yourself”. Press LOAD EXAMPLE for the full robot API.",
-    placeholder: '[\n  { "name": "walk", "description": "…", "parameters": { … } }\n]\n\n(press LOAD EXAMPLE)',
-    example: ROBOT_TOOL_EXAMPLE,
-    validate: parseToolsJson,
   },
   personalize: {
     key: "personalize",
@@ -59,6 +83,8 @@ const Editors = (() => {
     for (const ext of Object.values(EXTENSIONS)) {
       document.getElementById(ext.button).classList.toggle("active", !!Store.get(ext.key));
     }
+    document.getElementById("btn-functions")
+      .classList.toggle("active", FunctionStore.activeDecls().length > 0);
   }
 
   function updateCount() {
@@ -90,14 +116,6 @@ const Editors = (() => {
 
   btnSave.addEventListener("click", () => {
     const value = elText.value.trim();
-    if (value && current.validate) {
-      const result = current.validate(value);
-      if (result.error) {
-        elError.textContent = result.error;
-        elError.hidden = false;
-        return;
-      }
-    }
     const res = value ? Store.set(current.key, value) : (Store.remove(current.key), { ok: true });
     if (!res.ok) {
       elError.textContent = res.error;
@@ -133,14 +151,131 @@ const Editors = (() => {
 
   btnCancel.addEventListener("click", close);
   modal.addEventListener("pointerdown", (e) => { if (e.target === modal) close(); });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !modal.hidden) close();
-  });
   elText.addEventListener("input", updateCount);
 
   for (const [id, ext] of Object.entries(EXTENSIONS)) {
     document.getElementById(ext.button).addEventListener("click", () => open(id));
   }
+
+  /* ---------------- FUNCTIONS manager ---------------- */
+  const fnModal = document.getElementById("fn-modal");
+  const fnListView = document.getElementById("fn-list-view");
+  const fnEditView = document.getElementById("fn-edit-view");
+  const fnList = document.getElementById("fn-list");
+  const fnEmpty = document.getElementById("fn-empty");
+  const fnText = document.getElementById("fn-text");
+  const fnHl = document.getElementById("fn-hl");
+  const fnError = document.getElementById("fn-error");
+  const fnEditor = initCodeEditor(fnText, fnHl);
+  let editIndex = -1; // -1 = adding a new function
+
+  function renderList() {
+    const list = FunctionStore.load();
+    fnList.innerHTML = "";
+    fnEmpty.hidden = list.length > 0;
+    list.forEach((item, i) => {
+      const row = document.createElement("div");
+      row.className = "fn-row" + (item.enabled ? "" : " off");
+
+      const toggle = document.createElement("label");
+      toggle.className = "fn-switch";
+      toggle.title = item.enabled ? "Active - the model can call this" : "Inactive - hidden from the model";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = item.enabled;
+      cb.addEventListener("change", () => {
+        list[i].enabled = cb.checked;
+        FunctionStore.save(list);
+        renderList();
+        refreshButtons();
+      });
+      toggle.appendChild(cb);
+      toggle.appendChild(document.createElement("i"));
+
+      const info = document.createElement("button");
+      info.type = "button";
+      info.className = "fn-info";
+      info.title = "Edit";
+      info.innerHTML = `<b>${item.decl.name}</b><span>${item.decl.description || ""}</span>`;
+      info.addEventListener("click", () => openEdit(i));
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "fn-del";
+      del.textContent = "✕";
+      del.title = "Remove";
+      del.addEventListener("click", () => {
+        list.splice(i, 1);
+        FunctionStore.save(list);
+        renderList();
+        refreshButtons();
+      });
+
+      row.append(toggle, info, del);
+      fnList.appendChild(row);
+    });
+  }
+
+  function openEdit(index) {
+    editIndex = index;
+    const list = FunctionStore.load();
+    fnText.value = index >= 0 ? JSON.stringify(list[index].decl, null, 2) : FUNCTION_TEMPLATE;
+    fnEditor.render();
+    fnError.hidden = true;
+    fnListView.hidden = true;
+    fnEditView.hidden = false;
+    fnText.focus();
+  }
+
+  function backToList() {
+    fnEditView.hidden = true;
+    fnListView.hidden = false;
+    renderList();
+  }
+
+  document.getElementById("btn-functions").addEventListener("click", () => {
+    renderList();
+    fnEditView.hidden = true;
+    fnListView.hidden = false;
+    fnModal.hidden = false;
+  });
+  document.getElementById("fn-add").addEventListener("click", () => openEdit(-1));
+  document.getElementById("fn-example").addEventListener("click", () => {
+    const list = FunctionStore.load();
+    const have = new Set(list.map((it) => it.decl.name));
+    for (const decl of ROBOT_TOOL_DECLS) {
+      if (!have.has(decl.name)) list.push({ enabled: true, decl });
+    }
+    FunctionStore.save(list);
+    renderList();
+    refreshButtons();
+  });
+  document.getElementById("fn-save").addEventListener("click", () => {
+    const result = parseSingleFunction(fnText.value.trim());
+    if (result.error) {
+      fnError.textContent = result.error;
+      fnError.hidden = false;
+      return;
+    }
+    const list = FunctionStore.load();
+    if (editIndex >= 0) list[editIndex] = { enabled: list[editIndex].enabled, decl: result.decl };
+    else list.push({ enabled: true, decl: result.decl });
+    FunctionStore.save(list);
+    refreshButtons();
+    backToList();
+  });
+  document.getElementById("fn-back").addEventListener("click", backToList);
+  document.getElementById("fn-close").addEventListener("click", () => (fnModal.hidden = true));
+  fnModal.addEventListener("pointerdown", (e) => { if (e.target === fnModal) fnModal.hidden = true; });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!modal.hidden) close();
+    else if (!fnModal.hidden) {
+      if (!fnEditView.hidden) backToList();
+      else fnModal.hidden = true;
+    }
+  });
 
   return { refreshButtons };
 })();

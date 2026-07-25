@@ -9,9 +9,29 @@ document.addEventListener("DOMContentLoaded", () => {
   tars.idle();
   window.tars = tars; // console access - and the FUNCTIONS editor drives this too
 
-  // one-time autoplay retry for browsers that defer video playback
+  // ---------------- ambient music (20% volume, toggleable) ----------------
+  const bgm = document.getElementById("bgm");
+  const bgmToggle = document.getElementById("bgm-toggle");
+  bgm.volume = 0.2;
+  let musicOn = Store.get("music") !== "off";
+
+  function applyMusic() {
+    bgmToggle.classList.toggle("muted", !musicOn);
+    if (musicOn) bgm.play().catch(() => {}); // needs a user gesture first - retried below
+    else bgm.pause();
+  }
+  bgmToggle.addEventListener("click", () => {
+    musicOn = !musicOn;
+    Store.set("music", musicOn ? "on" : "off");
+    applyMusic();
+  });
+  bgm.addEventListener("error", () => (bgmToggle.hidden = true));
+  applyMusic();
+
+  // one-time autoplay retry for browsers that defer media until a gesture
   document.addEventListener("pointerdown", () => {
     document.querySelectorAll("video").forEach((v) => v.paused && v.play().catch(() => {}));
+    if (musicOn) bgm.play().catch(() => {});
   }, { once: true });
 
   const statusEl = document.getElementById("status");
@@ -45,6 +65,16 @@ document.addEventListener("DOMContentLoaded", () => {
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return div;
+  }
+
+  /** Markdown-lite for assistant replies: ```code blocks```, `inline code`, **bold**. */
+  function renderRich(el, text) {
+    let h = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    h = h.replace(/```\w*\n?([\s\S]*?)```/g, (_, code) => `<pre class="chat-code">${code.replace(/\n$/, "")}</pre>`);
+    h = h.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+    h = h.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>");
+    el.innerHTML = h;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
   let history = []; // Gemini `contents` array, including tool round-trips
@@ -193,6 +223,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let inFlight = false;
 
   function mapError(err) {
+    // A stored model can go stale ("no longer available to new users", renamed,
+    // retired): drop it and reopen settings so a fresh one gets picked.
+    if (err.status === "NOT_FOUND" || /no longer available|is not found/i.test(err.message)) {
+      Store.remove("model");
+      refreshStatus();
+      setTimeout(openSettings, 400);
+      return "That model is no longer available — opening settings so you can pick a new one (a good default is preselected).";
+    }
     switch (err.status) {
       case "API_KEY_INVALID":
       case "PERMISSION_DENIED":
@@ -218,16 +256,20 @@ document.addEventListener("DOMContentLoaded", () => {
     setStatus("THINKING…", "loading");
 
     const key = Store.get("apiKey");
-    const model = Store.get("model") || "models/gemini-2.5-flash";
+    const model = Store.get("model");
+    if (!model) {
+      pending.remove();
+      tars.talk(false);
+      sendBtn.disabled = false;
+      inFlight = false;
+      refreshStatus();
+      openSettings();
+      return;
+    }
     const persona = Store.get("personalize");
     const rag = Store.get("rag");
-    let toolDecls = null;
-    const fnText = Store.get("functions");
-    if (fnText) {
-      const parsed = parseToolsJson(fnText);
-      if (parsed.decls) toolDecls = parsed.decls;
-      else addMsg("assistant", "⚠ Saved FUNCTIONS JSON is invalid — sending without tools.", "error");
-    }
+    const activeDecls = FunctionStore.activeDecls(); // only switched-ON functions reach the model
+    const toolDecls = activeDecls.length ? activeDecls : null;
 
     const contents = [...history, { role: "user", parts: [{ text }] }];
 
@@ -269,7 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       pending.remove();
-      addMsg("assistant", finalText);
+      renderRich(addMsg("assistant", ""), finalText);
       history = contents; // commit the whole turn, tool rounds included
     } catch (err) {
       pending.remove();

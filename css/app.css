@@ -404,7 +404,7 @@ a { color: var(--green); }
   outline: none;
   cursor: pointer;
 }
-#sm-error, #em-error {
+#sm-error, #em-error, #fn-error {
   margin-top: 12px;
   padding: 8px 12px;
   font-size: 11px; line-height: 1.6;
@@ -412,6 +412,170 @@ a { color: var(--green); }
   border: 1px solid rgba(255, 196, 71, 0.35);
   border-radius: 6px;
   background: rgba(255, 196, 71, 0.06);
+}
+
+/* ---------- music toggle ---------- */
+#bgm-toggle {
+  position: fixed; top: 18px; right: 18px; z-index: 5;
+  display: grid; place-items: center;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  color: var(--green);
+  cursor: pointer;
+  transition: box-shadow 0.2s, color 0.2s;
+}
+#bgm-toggle:hover { box-shadow: 0 0 14px rgba(57, 255, 90, 0.3); }
+#bgm-toggle.muted { color: rgba(232, 245, 234, 0.35); }
+#bgm-toggle.muted::after {
+  content: "";
+  position: absolute;
+  width: 26px; height: 2px;
+  background: var(--red);
+  transform: rotate(-45deg);
+  border-radius: 2px;
+}
+
+/* ---------- code editor (FUNCTIONS) ---------- */
+.code-edit {
+  position: relative;
+  height: 300px;
+  margin-top: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.code-edit pre, .code-edit textarea {
+  position: absolute; inset: 0;
+  margin: 0;
+  padding: 12px;
+  font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  white-space: pre;
+  overflow: auto;
+  tab-size: 2;
+}
+.code-edit pre {
+  color: #cfe8d3;
+  pointer-events: none;
+  scrollbar-width: none;
+}
+.code-edit pre code { font: inherit; }
+.code-edit textarea {
+  color: transparent;
+  caret-color: var(--green);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  user-select: text;
+  scrollbar-width: thin;
+  scrollbar-color: var(--green-dim) transparent;
+}
+.code-edit textarea::selection { background: rgba(57, 255, 90, 0.25); }
+.tok-key { color: #6fd3ff; }
+.tok-str { color: #9dff8e; }
+.tok-num { color: #ffc447; }
+.tok-kw  { color: #d8a8ff; }
+
+/* ---------- FUNCTIONS list ---------- */
+#fn-list {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 10px 0 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--green-dim) transparent;
+}
+.fn-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: opacity 0.2s, border-color 0.2s;
+}
+.fn-row:hover { border-color: rgba(57, 255, 90, 0.45); }
+.fn-row.off { opacity: 0.45; }
+.fn-switch { position: relative; cursor: pointer; flex-shrink: 0; }
+.fn-switch input { position: absolute; opacity: 0; pointer-events: none; }
+.fn-switch i {
+  display: block;
+  width: 34px; height: 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 0.2s, border-color 0.2s;
+}
+.fn-switch i::after {
+  content: "";
+  position: absolute; top: 3px; left: 3px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: rgba(232, 245, 234, 0.5);
+  transition: transform 0.2s, background 0.2s;
+}
+.fn-switch input:checked + i {
+  background: rgba(57, 255, 90, 0.18);
+  border-color: var(--green);
+}
+.fn-switch input:checked + i::after {
+  transform: translateX(16px);
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+.fn-info {
+  flex: 1;
+  min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+  text-align: left;
+  font-family: var(--mono);
+  background: none; border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.fn-info b { color: var(--green); font-size: 12px; font-weight: 400; }
+.fn-info span {
+  color: rgba(232, 245, 234, 0.45);
+  font-size: 10px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fn-del {
+  flex-shrink: 0;
+  width: 26px; height: 26px;
+  font-family: var(--mono); font-size: 12px;
+  color: rgba(232, 245, 234, 0.4);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.fn-del:hover { color: var(--red); border-color: rgba(255, 92, 71, 0.4); }
+
+/* ---------- chat code rendering ---------- */
+.msg code {
+  padding: 1px 5px;
+  font-size: 12px;
+  color: #9dff8e;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(57, 255, 90, 0.15);
+  border-radius: 4px;
+}
+.msg .chat-code {
+  display: block;
+  margin: 6px 0;
+  padding: 10px 12px;
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
+  color: #9dff8e;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(57, 255, 90, 0.18);
+  border-radius: 6px;
+  overflow-x: auto;
+  white-space: pre;
+  scrollbar-width: thin;
+  scrollbar-color: var(--green-dim) transparent;
 }
 
 /* editor modal */

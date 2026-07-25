@@ -35,6 +35,14 @@
   <!-- status pill (click to open API settings) -->
   <button id="status" class="offline" type="button" title="API settings">CHECKING…</button>
 
+  <!-- ambient soundtrack (starts after first interaction, 20% volume) -->
+  <audio id="bgm" src="assets/Day-One-Interstellar-Theme.m4a" loop preload="auto"></audio>
+  <button id="bgm-toggle" type="button" title="Music on/off">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+      <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/>
+    </svg>
+  </button>
+
   <!-- dev tools -->
   <div id="devtools">
     <button id="devtools-toggle" type="button">DEV TOOLS</button>
@@ -99,6 +107,37 @@
       <div class="vm-actions">
         <button id="sm-save" type="button">SAVE</button>
         <button id="sm-cancel" type="button">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FUNCTIONS manager modal: a list of declarations, each toggleable/removable -->
+  <div id="fn-modal" hidden>
+    <div class="vm-card em-card">
+      <h2>FUNCTIONS — ROBOT TOOLS</h2>
+      <p class="vm-note">Each function below is offered to the model while its switch is ON —
+         it can call them to drive the robot. Add your own, or LOAD EXAMPLE for the full robot API.</p>
+
+      <div id="fn-list-view">
+        <div id="fn-list"></div>
+        <div id="fn-empty" class="vm-note" hidden>No functions yet — ADD one or LOAD EXAMPLE.</div>
+        <div class="vm-actions">
+          <button id="fn-add" type="button">+ ADD FUNCTION</button>
+          <button id="fn-example" type="button">LOAD EXAMPLE</button>
+          <button id="fn-close" type="button">CLOSE</button>
+        </div>
+      </div>
+
+      <div id="fn-edit-view" hidden>
+        <div class="code-edit">
+          <pre id="fn-hl" aria-hidden="true"><code></code></pre>
+          <textarea id="fn-text" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+        </div>
+        <div id="fn-error" hidden></div>
+        <div class="vm-actions">
+          <button id="fn-save" type="button">SAVE FUNCTION</button>
+          <button id="fn-back" type="button">BACK</button>
+        </div>
       </div>
     </div>
   </div>
