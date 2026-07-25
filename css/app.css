@@ -535,15 +535,37 @@ a { color: var(--green); }
 }
 #fn-view-builtins:hover { color: var(--green); border-color: var(--green); }
 
+/* one markdown-like page: ONLY this container scrolls, blocks never do */
 #fn-builtins-list {
-  display: flex; flex-direction: column; gap: 12px;
-  max-height: min(62vh, 560px);
+  display: flex; flex-direction: column; gap: 20px;
+  max-height: min(66vh, 640px);
   overflow-y: auto;
   margin-top: 10px;
-  padding-right: 4px;
+  padding-right: 6px;
   scrollbar-width: thin;
   scrollbar-color: var(--green-dim) transparent;
 }
+.fn-doc-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.fn-doc-head h3 {
+  font-family: var(--mono); font-size: 13px; font-weight: 400;
+  letter-spacing: 1px;
+  color: #6fd3ff;
+}
+.fn-doc-head h3::before { content: "# "; color: rgba(57, 255, 90, 0.5); }
+.copy-btn {
+  padding: 4px 10px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 2px;
+  color: rgba(232, 245, 234, 0.6);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.copy-btn:hover { color: var(--green); border-color: var(--green); }
 .py-code {
   margin: 0;
   padding: 13px 15px;
@@ -552,11 +574,9 @@ a { color: var(--green); }
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(57, 255, 90, 0.12);
   border-radius: 8px;
-  overflow-x: auto;
-  white-space: pre;
+  white-space: pre-wrap;      /* wrap long lines - the block itself never scrolls */
+  word-break: break-word;
   user-select: text;
-  scrollbar-width: thin;
-  scrollbar-color: var(--green-dim) transparent;
 }
 
 /* ---------- FUNCTIONS list ---------- */

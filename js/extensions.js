@@ -187,13 +187,38 @@ const Editors = (() => {
   const fnEditor = initCodeEditor(fnText, fnHl);
   let editIndex = -1; // -1 = adding a new function
 
-  // the built-in implementations, shown Python-style as a learning reference
+  // the built-in implementations, shown Python-style as a learning reference:
+  // one markdown-like page (single scroll), heading + copy button per block
   const builtins = document.getElementById("fn-builtins-list");
   for (const doc of BUILTIN_PYTHON_DOCS) {
+    const section = document.createElement("section");
+    section.className = "fn-doc";
+
+    const head = document.createElement("div");
+    head.className = "fn-doc-head";
+    const title = document.createElement("h3");
+    title.textContent = doc.name;
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.className = "copy-btn";
+    copy.textContent = "COPY";
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(doc.code);
+        copy.textContent = "COPIED ✓";
+      } catch {
+        copy.textContent = "FAILED";
+      }
+      setTimeout(() => (copy.textContent = "COPY"), 1200);
+    });
+    head.append(title, copy);
+
     const pre = document.createElement("pre");
     pre.className = "py-code";
     pre.innerHTML = highlightPython(doc.code);
-    builtins.appendChild(pre);
+
+    section.append(head, pre);
+    builtins.appendChild(section);
   }
 
   function renderList() {
