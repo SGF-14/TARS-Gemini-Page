@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'" />
+  <title>TARS — Gemini Sandbox</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/tars.css" />
+</head>
+<body>
+
+  <!-- looping wallpaper: two stacked videos, JS crossfades them near the loop point -->
+  <div id="wallpaper">
+    <video id="wp-a" class="wp visible" src="assets/wallpaper.mp4" muted playsinline></video>
+    <video id="wp-b" class="wp" src="assets/wallpaper.mp4" muted playsinline></video>
+    <div id="wp-tint"></div>
+  </div>
+
+  <!-- CRT overlay: faint scanlines + vignette over everything -->
+  <div id="crt"></div>
+
+  <!-- the robot -->
+  <div id="stage">
+    <div id="tars-root"></div>
+  </div>
+
+  <!-- header wordmark -->
+  <header id="header">
+    <h1>TARS</h1>
+  </header>
+
+  <!-- status pill (click to open API settings) -->
+  <button id="status" class="offline" type="button" title="API settings">CHECKING…</button>
+
+  <!-- ambient soundtrack (starts after first interaction) -->
+  <audio id="bgm" src="assets/Day-One-Interstellar-Theme.m4a" loop preload="auto"></audio>
+  <button id="bgm-toggle" type="button" title="Music on/off">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+      <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/>
+    </svg>
+  </button>
+  <button id="lang-toggle" type="button" title="العربية / English">ع</button>
+
+  <!-- dev tools -->
+  <div id="devtools">
+    <button id="devtools-toggle" type="button" data-i18n="dt_toggle">DEV TOOLS</button>
+    <div id="devtools-menu" hidden>
+      <label><input type="checkbox" id="opt-freelook" /> <span data-i18n="dt_freelook">free look (drag)</span></label>
+      <button id="btn-demo" type="button" data-i18n="dt_demo">DEMO SPIN</button>
+      <button id="btn-reset" type="button" data-i18n="dt_reset">RESET ROBOT</button>
+      <button id="btn-settings" type="button" data-i18n="dt_settings">API SETTINGS…</button>
+      <div class="dt-section" data-i18n="dt_spin">column spin — ±360°</div>
+      <div class="dt-slider"><span>C1</span><input type="range" id="spin-0" min="-360" max="360" value="0" /><input type="number" id="spin-0-num" min="-360" max="360" value="0" /></div>
+      <div class="dt-slider"><span>C2</span><input type="range" id="spin-1" min="-360" max="360" value="0" /><input type="number" id="spin-1-num" min="-360" max="360" value="0" /></div>
+      <div class="dt-slider"><span>C3</span><input type="range" id="spin-2" min="-360" max="360" value="0" /><input type="number" id="spin-2-num" min="-360" max="360" value="0" /></div>
+      <div class="dt-slider"><span>C4</span><input type="range" id="spin-3" min="-360" max="360" value="0" /><input type="number" id="spin-3-num" min="-360" max="360" value="0" /></div>
+      <div class="dt-section" data-i18n="dt_outer">outer columns — down</div>
+      <div class="dt-slider"><span>L</span><input type="range" id="lift-0" min="0" max="80" value="0" /><input type="number" id="lift-0-num" min="0" max="80" value="0" /></div>
+      <div class="dt-slider"><span>R</span><input type="range" id="lift-3" min="0" max="80" value="0" /><input type="number" id="lift-3-num" min="0" max="80" value="0" /></div>
+    </div>
+  </div>
+
+  <!-- control bar: extension editors + chat toggle -->
+  <div id="controls">
+    <button class="ext-btn" id="btn-rag" type="button" data-i18n="ext_rag">RAG</button>
+    <button class="ext-btn" id="btn-functions" type="button" data-i18n="ext_functions">FUNCTIONS</button>
+    <button class="ext-btn" id="btn-personalize" type="button" data-i18n="ext_persona">PERSONA</button>
+    <button id="chat-toggle" type="button" title="Toggle chat">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+        <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2Z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- chat panel -->
+  <aside id="chat-panel">
+    <header>TARS <span class="dim" data-i18n="chat_log">// transmission log</span><button id="chat-clear" type="button" data-i18n="chat_clear">CLEAR</button><button id="chat-close" type="button" title="Close">✕</button></header>
+    <div id="messages"></div>
+    <form id="chat-form" autocomplete="off">
+      <input id="chat-input" type="text" data-i18n-ph="chat_ph" placeholder="Type a message…" />
+      <button type="submit" data-i18n="chat_send">SEND</button>
+    </form>
+  </aside>
+
+  <!-- API settings modal -->
+  <div id="settings-modal" hidden>
+    <div class="vm-card">
+      <h2>GEMINI API</h2>
+      <p data-i18n-html="sm_body">This page talks to Google's Gemini API straight from your browser.
+         Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">aistudio.google.com/apikey</a>.</p>
+      <label class="sm-field">
+        <span data-i18n="sm_key">API KEY</span>
+        <span class="sm-keywrap">
+          <input id="sm-key" type="password" placeholder="AIza…" spellcheck="false" />
+          <button id="sm-show" type="button" title="Show/hide">◉</button>
+        </span>
+      </label>
+      <label class="sm-field" id="sm-model-row" hidden>
+        <span data-i18n="sm_model">MODEL</span>
+        <select id="sm-model"></select>
+      </label>
+      <p class="vm-note" data-i18n="sm_note">The key is stored only in this browser (localStorage) and sent only to
+         generativelanguage.googleapis.com. Use a free-tier key; revoke it anytime in AI Studio.</p>
+      <div id="sm-error" hidden></div>
+      <div class="vm-actions">
+        <button id="sm-save" type="button" data-i18n="sm_save">SAVE</button>
+        <button id="sm-cancel" type="button" data-i18n="sm_cancel">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FUNCTIONS manager modal: a list of declarations, each toggleable/removable -->
+  <div id="fn-modal" hidden>
+    <div class="vm-card em-card">
+      <h2 data-i18n="fn_title">FUNCTIONS — ROBOT TOOLS</h2>
+      <p class="vm-note" data-i18n="fn_note">Each function below is offered to the model while its switch is ON —
+         it can call them to drive the robot. Add your own, or LOAD EXAMPLE for the full robot API.</p>
+
+      <div id="fn-list-view">
+        <div id="fn-list"></div>
+        <div id="fn-empty" class="vm-note" data-i18n="fn_empty" hidden>No functions yet — ADD one or LOAD EXAMPLE.</div>
+        <button id="fn-view-builtins" type="button" data-i18n="fn_builtins">📖 BUILT-IN FUNCTIONS — see what the robot can run</button>
+        <div class="vm-actions">
+          <button id="fn-add" type="button" data-i18n="fn_add">+ ADD FUNCTION</button>
+          <button id="fn-example" type="button" data-i18n="fn_example">LOAD EXAMPLE</button>
+          <button id="fn-close" type="button" data-i18n="fn_close">CLOSE</button>
+        </div>
+      </div>
+
+      <div id="fn-ref-view" hidden>
+        <p class="vm-note" data-i18n="fn_ref_note">These implementations exist in the page (shown Python-style for
+           readability). Declare a function with one of these names and the model can trigger it —
+           copy the pattern when building your own.</p>
+        <div id="fn-builtins-list"></div>
+        <div class="vm-actions">
+          <button id="fn-ref-back" type="button" data-i18n="fn_back">← BACK</button>
+        </div>
+      </div>
+
+      <div id="fn-edit-view" hidden>
+        <div class="code-edit">
+          <pre id="fn-hl" aria-hidden="true"><code></code></pre>
+          <textarea id="fn-text" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+        </div>
+        <div id="fn-error" hidden></div>
+        <details id="fn-guide">
+          <summary data-i18n="fn_guide">HOW TO WRITE A FUNCTION</summary>
+          <dl>
+            <dt>"name"</dt>
+            <dd>Required. What the model calls — for the robot use: <code>walk</code>, <code>spinColumns</code>, <code>liftOuterColumns</code>, <code>demo</code>, <code>stop</code> (see BUILT-IN FUNCTIONS in the list view). Any other name is delivered back to the model as "unknown" (useful for experimenting).</dd>
+            <dt>"description"</dt>
+            <dd>The model reads this to decide <em>when</em> to call the function — write it like an instruction to a colleague.</dd>
+            <dt>"parameters"</dt>
+            <dd>The arguments, as a schema: <code>"type": "OBJECT"</code> with a <code>"properties"</code> map. Types are UPPERCASE: <code>STRING</code>, <code>INTEGER</code>, <code>NUMBER</code>, <code>BOOLEAN</code>. For lists use <code>"type": "ARRAY"</code> with an <code>"items"</code> schema — that's how <code>spinColumns</code> accepts several columns at once. Describe each property — descriptions steer the model's argument choices.</dd>
+            <dt>"required"</dt>
+            <dd>Optional list of property names the model must always provide.</dd>
+            <dt>no arguments?</dt>
+            <dd>Leave <code>"parameters"</code> out entirely (like <code>demo</code> / <code>stop</code>).</dd>
+          </dl>
+        </details>
+        <div class="vm-actions">
+          <button id="fn-save" type="button" data-i18n="fn_save">SAVE FUNCTION</button>
+          <button id="fn-back" type="button" data-i18n="fn_back">BACK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- shared extension editor modal -->
+  <div id="editor-modal" hidden>
+    <div class="vm-card em-card">
+      <h2 id="em-title">EDITOR</h2>
+      <p id="em-hint" class="vm-note"></p>
+      <textarea id="em-text" spellcheck="false"></textarea>
+      <div class="em-foot">
+        <span id="em-count" class="dim"></span>
+        <span id="em-saved" data-i18n="em_saved" hidden>SAVED ✓</span>
+      </div>
+      <div id="em-error" hidden></div>
+      <div class="vm-actions">
+        <button id="em-save" type="button" data-i18n="em_save">SAVE</button>
+        <button id="em-example" type="button" data-i18n="em_example">LOAD EXAMPLE</button>
+        <button id="em-clear" type="button" data-i18n="em_clear">CLEAR</button>
+        <button id="em-cancel" type="button" data-i18n="em_cancel">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/gemini.js"></script>
+  <script src="js/wallpaper.js"></script>
+  <script src="js/tars-robot.js"></script>
+  <script src="js/robot-tools.js"></script>
+  <script src="js/extensions.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
