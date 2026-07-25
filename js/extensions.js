@@ -21,6 +21,21 @@ function highlightJson(src) {
   );
 }
 
+/* Python-ish highlighter for the built-in function reference. */
+function highlightPython(src) {
+  const esc = src.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return esc.replace(
+    /("""[\s\S]*?"""|"(?:\\.|[^"\\])*")|(#.*)|\b(def|for|in|if|else|return|range|not|and|or|None|True|False)\b|(?<=def\s)(\w+)|-?\b\d+\.?\d*\b/g,
+    (m, str, com, kw, fname) => {
+      if (str) return `<span class="tok-str">${str}</span>`;
+      if (com) return `<span class="tok-com">${com}</span>`;
+      if (kw) return `<span class="tok-kw">${kw}</span>`;
+      if (fname) return `<span class="tok-def">${fname}</span>`;
+      return `<span class="tok-num">${m}</span>`;
+    }
+  );
+}
+
 function initCodeEditor(textarea, pre) {
   const code = pre.querySelector("code");
   function render() {
@@ -83,8 +98,10 @@ const Editors = (() => {
     for (const ext of Object.values(EXTENSIONS)) {
       document.getElementById(ext.button).classList.toggle("active", !!Store.get(ext.key));
     }
-    document.getElementById("btn-functions")
-      .classList.toggle("active", FunctionStore.activeDecls().length > 0);
+    const fnBtn = document.getElementById("btn-functions");
+    const n = FunctionStore.activeDecls().length;
+    fnBtn.classList.toggle("active", n > 0);
+    fnBtn.dataset.count = n; // shown as a little counter badge
   }
 
   function updateCount() {
@@ -168,6 +185,15 @@ const Editors = (() => {
   const fnError = document.getElementById("fn-error");
   const fnEditor = initCodeEditor(fnText, fnHl);
   let editIndex = -1; // -1 = adding a new function
+
+  // the built-in implementations, shown Python-style as a learning reference
+  const builtins = document.getElementById("fn-builtins-list");
+  for (const doc of BUILTIN_PYTHON_DOCS) {
+    const pre = document.createElement("pre");
+    pre.className = "py-code";
+    pre.innerHTML = highlightPython(doc.code);
+    builtins.appendChild(pre);
+  }
 
   function renderList() {
     const list = FunctionStore.load();

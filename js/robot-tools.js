@@ -14,32 +14,98 @@ const ROBOT_TOOL_DECLS = [
     },
   },
   {
-    name: "rotateColumn",
-    description: "Tumble one of the four body columns end-over-end like a wheel.",
+    name: "spinColumns",
+    description:
+      "Tumble one or MORE body columns end-over-end like wheels, all at once. " +
+      "Columns are numbered 0-3 left to right (C1-C4). Example: columns [1,2] spins the middle pair together.",
     parameters: {
       type: "OBJECT",
       properties: {
-        column: { type: "INTEGER", description: "Column index, 0-3 (left to right)" },
-        degrees: { type: "NUMBER", description: "Rotation angle, -360 to 360" },
+        columns: {
+          type: "ARRAY",
+          items: { type: "INTEGER" },
+          description: "One or more column indexes, 0-3. e.g. [2] or [1,2] or [0,1,2,3]",
+        },
+        degrees: { type: "NUMBER", description: "Rotation angle applied to every listed column, -360 to 360" },
       },
-      required: ["column", "degrees"],
+      required: ["columns", "degrees"],
     },
   },
   {
-    name: "liftColumn",
-    description: "Push an OUTER column (0 or 3) straight down and back. 0 returns it to rest.",
+    name: "liftOuterColumns",
+    description:
+      "Press the OUTER columns straight down and back. Accepts one side or both at once: " +
+      "\"L\" is the left outer column, \"R\" the right. px 0 returns them to rest.",
     parameters: {
       type: "OBJECT",
       properties: {
-        column: { type: "INTEGER", description: "0 (left) or 3 (right)" },
-        px: { type: "NUMBER", description: "Downward travel in pixels, 0-80" },
+        sides: {
+          type: "ARRAY",
+          items: { type: "STRING", enum: ["L", "R"] },
+          description: "Which outer columns to move: [\"L\"], [\"R\"] or [\"L\",\"R\"]",
+        },
+        px: { type: "NUMBER", description: "Downward travel in pixels, 0-80 (0 = back to rest)" },
       },
-      required: ["column", "px"],
+      required: ["sides", "px"],
     },
   },
   // No-argument functions omit `parameters` entirely (the API rejects empty OBJECT schemas).
   { name: "demo", description: "Show-off routine: body rises, all columns spin 360, settle." },
   { name: "stop", description: "Cancel all motion and return to the neutral pose." },
+];
+
+/* Python-style reference of the built-in implementations, shown (syntax-colored)
+   in the FUNCTIONS modal so users can see exactly what exists and copy the
+   pattern when declaring their own tools. */
+const BUILTIN_PYTHON_DOCS = [
+  {
+    name: "walk",
+    code:
+`def walk(steps=1):
+    """Perform TARS's walking motion, in place.
+    steps: 1-5 (each step takes ~1.2s)"""
+    for _ in range(steps):
+        robot.press_outer_columns_down()   # body rises
+        robot.swing_middle_columns()       # the "step"
+        robot.settle()`,
+  },
+  {
+    name: "spinColumns",
+    code:
+`def spinColumns(columns, degrees):
+    """Tumble columns end-over-end like wheels - several at once.
+    columns: list of 0-3, e.g. [1, 2] spins C2 and C3 together
+    degrees: -360 to 360 (same angle for every listed column)"""
+    for c in columns:
+        robot.spin_column(c, degrees)`,
+  },
+  {
+    name: "liftOuterColumns",
+    code:
+`def liftOuterColumns(sides, px):
+    """Press the outer columns down and back.
+    sides: ["L"], ["R"] or ["L", "R"]  (left / right outer column)
+    px: 0-80 downward travel, 0 returns to rest"""
+    for side in sides:
+        column = 0 if side == "L" else 3
+        robot.lift_column(column, px)`,
+  },
+  {
+    name: "demo",
+    code:
+`def demo():
+    """Show-off routine: body rises, every column spins a full 360, settle."""
+    robot.rise()
+    robot.spin_all_columns(360)
+    robot.settle()`,
+  },
+  {
+    name: "stop",
+    code:
+`def stop():
+    """Cancel all motion and return to the neutral pose."""
+    robot.reset()`,
+  },
 ];
 
 const FUNCTION_TEMPLATE = JSON.stringify({
@@ -143,8 +209,34 @@ async function executeFunctionCall(tars, call, ui) {
       case "walk": {
         const steps = clamp(args.steps ?? 1, 1, 5); // clamp: each step takes ~1.2s
         await tars.walk(steps);
-        return { ok: true, detail: `walked ${steps} step(s)` };
+        return { ok: true, detail: `walked ${steps} step(s) in place` };
       }
+      case "spinColumns": {
+        const cols = [...new Set((Array.isArray(args.columns) ? args.columns : [args.columns])
+          .map((c) => clamp(c, 0, 3)))];
+        if (!cols.length) return { ok: false, error: "columns must list at least one index 0-3." };
+        const deg = clamp(args.degrees, -360, 360);
+        for (const c of cols) {
+          tars.rotateColumn(c, deg);
+          ui?.onColumnSpin?.(c, deg);
+        }
+        return { ok: true, detail: `column(s) ${cols.join(", ")} rotated to ${deg} degrees` };
+      }
+      case "liftOuterColumns": {
+        const sides = (Array.isArray(args.sides) ? args.sides : [args.sides])
+          .map((s) => String(s).toUpperCase());
+        const cols = [...new Set(sides.map((s) => (s === "L" || s === "0" ? 0 : s === "R" || s === "3" ? 3 : -1)))];
+        if (cols.includes(-1) || !cols.length) {
+          return { ok: false, error: 'sides must be one or both of "L" and "R".' };
+        }
+        const px = clamp(args.px, 0, 80);
+        for (const c of cols) {
+          tars.liftColumn(c, px);
+          ui?.onColumnLift?.(c, px);
+        }
+        return { ok: true, detail: `outer column(s) ${cols.map((c) => (c === 0 ? "L" : "R")).join(", ")} shifted down ${px}px` };
+      }
+      // aliases: older saved declarations keep working
       case "rotateColumn": {
         const col = clamp(args.column, 0, 3);
         const deg = clamp(args.degrees, -360, 360);

@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------------- ambient music (20% volume, toggleable) ----------------
   const bgm = document.getElementById("bgm");
   const bgmToggle = document.getElementById("bgm-toggle");
-  bgm.volume = 0.2;
+  bgm.volume = 0.05;
   let musicOn = Store.get("music") !== "off";
 
   function applyMusic() {

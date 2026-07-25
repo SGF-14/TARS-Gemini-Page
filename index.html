@@ -121,6 +121,13 @@
       <div id="fn-list-view">
         <div id="fn-list"></div>
         <div id="fn-empty" class="vm-note" hidden>No functions yet — ADD one or LOAD EXAMPLE.</div>
+        <details id="fn-builtins">
+          <summary>BUILT-IN FUNCTIONS — what the robot can actually run</summary>
+          <p class="vm-note">These implementations exist in the page (shown here Python-style for
+             readability). Declare a function with one of these names and the model can trigger it —
+             use them as the pattern for your own.</p>
+          <div id="fn-builtins-list"></div>
+        </details>
         <div class="vm-actions">
           <button id="fn-add" type="button">+ ADD FUNCTION</button>
           <button id="fn-example" type="button">LOAD EXAMPLE</button>
@@ -138,11 +145,11 @@
           <summary>HOW TO WRITE A FUNCTION</summary>
           <dl>
             <dt>"name"</dt>
-            <dd>Required. What the model calls — for the robot use: <code>walk</code>, <code>rotateColumn</code>, <code>liftColumn</code>, <code>demo</code>, <code>stop</code>. Any other name is delivered back to the model as "unknown" (useful for experimenting).</dd>
+            <dd>Required. What the model calls — for the robot use: <code>walk</code>, <code>spinColumns</code>, <code>liftOuterColumns</code>, <code>demo</code>, <code>stop</code> (see BUILT-IN FUNCTIONS in the list view). Any other name is delivered back to the model as "unknown" (useful for experimenting).</dd>
             <dt>"description"</dt>
             <dd>The model reads this to decide <em>when</em> to call the function — write it like an instruction to a colleague.</dd>
             <dt>"parameters"</dt>
-            <dd>The arguments, as a schema: <code>"type": "OBJECT"</code> with a <code>"properties"</code> map. Types are UPPERCASE: <code>STRING</code>, <code>INTEGER</code>, <code>NUMBER</code>, <code>BOOLEAN</code>. Describe each property — descriptions steer the model's argument choices.</dd>
+            <dd>The arguments, as a schema: <code>"type": "OBJECT"</code> with a <code>"properties"</code> map. Types are UPPERCASE: <code>STRING</code>, <code>INTEGER</code>, <code>NUMBER</code>, <code>BOOLEAN</code>. For lists use <code>"type": "ARRAY"</code> with an <code>"items"</code> schema — that's how <code>spinColumns</code> accepts several columns at once. Describe each property — descriptions steer the model's argument choices.</dd>
             <dt>"required"</dt>
             <dd>Optional list of property names the model must always provide.</dd>
             <dt>no arguments?</dt>
