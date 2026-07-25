@@ -482,6 +482,41 @@ a { color: var(--green); }
   border-radius: 2px;
 }
 
+/* ---------- language toggle ---------- */
+#lang-toggle {
+  position: fixed; top: 18px; right: 66px; z-index: 5;
+  display: grid; place-items: center;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  color: var(--green);
+  font-family: var(--sans); font-size: 15px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+#lang-toggle:hover { box-shadow: 0 0 8px rgba(111, 221, 149, 0.18); }
+
+/* ---------- Arabic / RTL ---------- */
+html[lang="ar"] body { font-family: var(--sans); }
+html[lang="ar"] button,
+html[lang="ar"] label,
+html[lang="ar"] .dt-section,
+html[lang="ar"] .vm-note,
+html[lang="ar"] .vm-card p { letter-spacing: 0 !important; }
+html[lang="ar"] #chat-input,
+html[lang="ar"] #em-text { font-family: var(--sans); }
+
+/* code always stays LTR + monospace, whatever the UI language */
+.py-code, .chat-code, .msg code, .code-edit pre, .code-edit textarea,
+.fn-info b, .sm-keywrap input, .dt-slider {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+}
+[dir="rtl"] .fn-doc-head { flex-direction: row-reverse; }
+
 /* ---------- code editor (FUNCTIONS) ---------- */
 .code-edit {
   position: relative;
@@ -771,6 +806,7 @@ a { color: var(--green); }
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   }
   #bgm-toggle { top: 12px; right: 12px; width: 36px; height: 36px; }
+  #lang-toggle { top: 12px; right: 54px; width: 36px; height: 36px; font-size: 13px; }
 
   #devtools { top: 50px; left: 12px; width: min(230px, 62vw); }
   #devtools-menu { max-height: 55vh; overflow-y: auto; }

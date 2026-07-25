@@ -42,15 +42,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const sendBtn = chatForm.querySelector("button");
 
   // ---------------- status pill ----------------
-  function setStatus(text, cls = "") {
+  function setStatus(text, cls = "", state = "") {
     statusEl.textContent = text;
     statusEl.className = cls;
+    statusEl.dataset.state = state;
   }
   function refreshStatus() {
-    if (!Store.get("apiKey")) return setStatus("NO API KEY", "offline");
+    if (!Store.get("apiKey")) return setStatus(t("st_no_key"), "offline", "no_key");
     const model = Store.get("model");
-    setStatus(model ? `READY · ${model.replace(/^models\//, "")}` : "READY", "");
+    setStatus(model ? `${t("st_ready")} · ${model.replace(/^models\//, "")}` : t("st_ready"), "", "ready");
   }
+
+  // ---------------- language toggle ----------------
+  applyLanguage(LANG); // stamp saved language onto the static UI
+  document.getElementById("lang-toggle").addEventListener("click", () => {
+    applyLanguage(LANG === "ar" ? "en" : "ar");
+    refreshStatus();
+  });
 
   // ---------------- chat panel ----------------
   document.getElementById("chat-toggle").addEventListener("click", () => {
@@ -64,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function addMsg(role, text, extraClass = "") {
     const div = document.createElement("div");
     div.className = `msg ${role} ${extraClass}`.trim();
+    div.dir = "auto"; // Arabic and English messages each align naturally
     div.textContent = text;
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -147,12 +156,12 @@ document.addEventListener("DOMContentLoaded", () => {
   smSave.addEventListener("click", async () => {
     const key = smKey.value.trim();
     if (!key) {
-      smError.textContent = "Enter an API key first.";
+      smError.textContent = t("sm_enter_key");
       smError.hidden = false;
       return;
     }
     smSave.disabled = true;
-    smSave.textContent = "CHECKING…";
+    smSave.textContent = t("sm_checking");
     try {
       await populateModels(key); // doubles as key validation
       Store.set("apiKey", key);
@@ -161,12 +170,12 @@ document.addEventListener("DOMContentLoaded", () => {
       closeSettings();
     } catch (err) {
       smError.textContent = err.status === "NETWORK"
-        ? err.message
-        : `Key rejected: ${err.message}`;
+        ? t("err_network")
+        : t("sm_rejected") + err.message;
       smError.hidden = false;
     } finally {
       smSave.disabled = false;
-      smSave.textContent = "SAVE";
+      smSave.textContent = t("sm_save");
     }
   });
 
@@ -254,19 +263,27 @@ document.addEventListener("DOMContentLoaded", () => {
       Store.remove("model");
       refreshStatus();
       setTimeout(openSettings, 400);
-      return "That model is no longer available — opening settings so you can pick a new one (a good default is preselected).";
+      return t("err_model_gone");
     }
     switch (err.status) {
       case "API_KEY_INVALID":
       case "PERMISSION_DENIED":
-        setStatus("KEY INVALID", "offline");
-        return "API key rejected — click the status pill to update it.";
+        setStatus(t("st_key_invalid"), "offline", "key_invalid");
+        return t("err_key");
       case "RESOURCE_EXHAUSTED":
-        return "Rate limit / quota exhausted — wait a minute or switch to a flash model (status pill → model).";
+        return t("err_quota");
       case "NETWORK":
-        return "Network error — check your connection.";
+        return t("err_network");
+      case "BLOCKED":
+        return t("err_blocked");
+      case "SAFETY":
+        return t("err_safety");
+      case "MALFORMED":
+        return t("err_malformed");
+      case "TOOL_LOOP":
+        return t("err_toolloop");
       default:
-        return `Gemini error: ${err.message}`;
+        return t("err_gemini") + err.message;
     }
   }
 
@@ -278,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addMsg("user", text);
     const pending = addMsg("assistant", "…", "pending");
     tars.talk(true);
-    setStatus("THINKING…", "loading");
+    setStatus(t("st_thinking"), "loading", "thinking");
 
     const key = Store.get("apiKey");
     const model = Store.get("model");
@@ -312,8 +329,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!out.functionCalls.length) {
-          finalText = out.text || "(empty response)";
-          if (out.finishReason === "MAX_TOKENS") finalText += "\n…truncated";
+          finalText = out.text || t("err_empty");
+          if (out.finishReason === "MAX_TOKENS") finalText += "\n" + t("err_truncated");
           contents.push(out.modelContent || { role: "model", parts: [{ text: finalText }] });
           break;
         }
@@ -349,7 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       sendBtn.disabled = false;
       inFlight = false;
-      if (statusEl.textContent === "THINKING…") refreshStatus();
+      if (statusEl.dataset.state === "thinking") refreshStatus();
     }
   }
 

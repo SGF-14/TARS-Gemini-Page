@@ -55,8 +55,8 @@ const EXTENSIONS = {
   rag: {
     key: "rag",
     button: "btn-rag",
-    title: "RAG — KNOWLEDGE",
-    hint: "Paste documents, notes or facts. While non-empty, they are injected as reference context for every answer — ask about them and TARS will know.",
+    titleKey: "rag_title",
+    hintKey: "rag_hint",
     placeholder: "MISSION BRIEF:\nThe station's docking code is CASE-3-3-1.\nDr. Brand's favourite equation is the gravity equation.\n\n(paste anything - manuals, lore, your own docs)",
     example:
       "MISSION BRIEF\n=============\nShip: Endurance. Crew: Cooper, Brand, Doyle, Romilly.\n" +
@@ -67,8 +67,8 @@ const EXTENSIONS = {
   personalize: {
     key: "personalize",
     button: "btn-personalize",
-    title: "PERSONALIZE — PERSONA",
-    hint: "A system prompt. While non-empty it is sent as the model's systemInstruction — personality, rules, style, anything.",
+    titleKey: "persona_title",
+    hintKey: "persona_hint",
     placeholder: "You are TARS from Interstellar.\nHumor setting: 75%. Honesty setting: 90%.\nAnswer concisely and deadpan.",
     example:
       "You are TARS, the tactical robot from Interstellar.\n" +
@@ -106,21 +106,21 @@ const Editors = (() => {
 
   function updateCount() {
     const n = elText.value.length;
-    let label = `${n.toLocaleString()} chars`;
-    if (current?.maxWarn && n > current.maxWarn) label += " — large; answers may slow down";
+    let label = `${n.toLocaleString()} ${t("em_chars")}`;
+    if (current?.maxWarn && n > current.maxWarn) label += " " + t("em_large");
     elCount.textContent = label;
   }
 
   function open(id) {
     current = EXTENSIONS[id];
     clearArmed = false;
-    elTitle.textContent = current.title;
-    elHint.textContent = current.hint;
+    elTitle.textContent = t(current.titleKey);
+    elHint.textContent = t(current.hintKey);
     elText.value = Store.get(current.key);
     elText.placeholder = current.placeholder;
     elError.hidden = true;
     elSaved.hidden = true;
-    btnClear.textContent = "CLEAR";
+    btnClear.textContent = t("em_clear");
     updateCount();
     modal.hidden = false;
     elText.focus();
@@ -155,14 +155,14 @@ const Editors = (() => {
   btnClear.addEventListener("click", () => {
     if (!clearArmed) {
       clearArmed = true;
-      btnClear.textContent = "SURE?";
+      btnClear.textContent = t("em_sure");
       return;
     }
     elText.value = "";
     Store.remove(current.key);
     refreshButtons();
     clearArmed = false;
-    btnClear.textContent = "CLEAR";
+    btnClear.textContent = t("em_clear");
     updateCount();
   });
 
@@ -201,15 +201,15 @@ const Editors = (() => {
     const copy = document.createElement("button");
     copy.type = "button";
     copy.className = "copy-btn";
-    copy.textContent = "COPY";
+    copy.textContent = t("fn_copy");
     copy.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(doc.code);
-        copy.textContent = "COPIED ✓";
+        copy.textContent = t("fn_copied");
       } catch {
-        copy.textContent = "FAILED";
+        copy.textContent = "✗";
       }
-      setTimeout(() => (copy.textContent = "COPY"), 1200);
+      setTimeout(() => (copy.textContent = t("fn_copy")), 1200);
     });
     head.append(title, copy);
 
@@ -231,7 +231,7 @@ const Editors = (() => {
 
       const toggle = document.createElement("label");
       toggle.className = "fn-switch";
-      toggle.title = item.enabled ? "Active - the model can call this" : "Inactive - hidden from the model";
+      toggle.title = item.enabled ? t("fn_active_tip") : t("fn_inactive_tip");
       const cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = item.enabled;

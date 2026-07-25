@@ -9,6 +9,7 @@ const Store = (() => {
     functions: "tars.ext.functions",
     personalize: "tars.ext.personalize",
     music: "tars.ui.music",
+    lang: "tars.ui.lang",
   };
 
   function get(key) {
