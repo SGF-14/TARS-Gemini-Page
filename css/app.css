@@ -326,7 +326,7 @@ a { color: var(--green); }
 #chat-form button:disabled { opacity: 0.4; cursor: default; }
 
 /* ---------- modals (settings + editors) ---------- */
-#settings-modal, #editor-modal {
+#settings-modal, #editor-modal, #fn-modal {
   position: fixed; inset: 0; z-index: 20;
   display: grid; place-items: center;
   background: rgba(4, 6, 5, 0.7);
