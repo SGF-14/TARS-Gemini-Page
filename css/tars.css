@@ -1,0 +1,199 @@
+/* ============ TARS robot — geometry & materials ============
+   DOM (built by js/tars-robot.js):
+   #tars-root > .tars-shadow
+              > .tars-bob                (idle / talking bob)
+                > .tars-body             (walk: translateX/Y — set by JS)
+                  > .col-slot ×4         (outer columns: translateY lift — set by JS)
+                    > .col-rotor         (rotateX swing + rotateY spin — set by JS)
+                      > .face ×4 (+details)
+*/
+
+:root {
+  --col-w: 54px;
+  --col-h: 320px;
+  --col-d: 54px;
+  --col-gap: 5px;
+}
+
+#tars-root {
+  position: relative;
+  perspective: 1200px;
+  perspective-origin: 50% 35%;
+  pointer-events: none;
+}
+
+.tars-bob { animation: tars-idle 4.5s ease-in-out infinite; }
+.tars-bob.talking { animation: tars-talk 0.5s ease-in-out infinite; }
+
+@keyframes tars-idle {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+@keyframes tars-talk {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+.tars-view {
+  transform-style: preserve-3d; /* free-look orbit wrapper, rotated by JS */
+}
+
+.tars-body {
+  display: flex;
+  gap: var(--col-gap);
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+
+.col-slot {
+  transform-style: preserve-3d;
+  transition: transform 0.22s ease;
+}
+
+.col-rotor {
+  position: relative;
+  width: var(--col-w);
+  height: var(--col-h);
+  transform-style: preserve-3d;
+  transform-origin: top center;      /* walk swing pivots at the top */
+  transition: transform 0.55s cubic-bezier(0.35, 0, 0.25, 1);
+}
+
+.col-spin {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: center center;   /* wheel spin pivots at the center */
+  transition: transform 0.15s linear;
+}
+
+/* ---------- faces ---------- */
+.face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+.face.front  { transform: translateZ(calc(var(--col-d) / 2)); }
+.face.back   { transform: rotateY(180deg) translateZ(calc(var(--col-d) / 2)); }
+.face.side-l { transform: rotateY(-90deg) translateZ(calc(var(--col-w) / 2)); }
+.face.side-r { transform: rotateY(90deg)  translateZ(calc(var(--col-w) / 2)); }
+
+/* end caps - visible while a column tumbles forward/backward */
+.face.top, .face.bottom {
+  inset: auto 0;
+  height: var(--col-d);
+  background: linear-gradient(120deg, #3c4044, #26292c);
+  border: 1px solid rgba(0, 0, 0, 0.6);
+}
+.face.top {
+  top: 0;
+  transform-origin: top center;
+  transform: rotateX(90deg) translateY(calc(var(--col-d) / -2));
+}
+.face.bottom {
+  bottom: 0;
+  transform-origin: bottom center;
+  transform: rotateX(-90deg) translateY(calc(var(--col-d) / 2));
+}
+
+/* brushed metal + panel seams */
+.face.front, .face.back {
+  background:
+    /* horizontal panel seams */
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 78px,
+      rgba(0, 0, 0, 0.45) 78px 80px
+    ),
+    /* fine brushed texture */
+    repeating-linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.03) 0 1px,
+      transparent 1px 3px
+    ),
+    linear-gradient(100deg, #8a8f94 0%, #5d6267 35%, #43474c 70%, #34383c 100%);
+  border: 1px solid rgba(0, 0, 0, 0.55);
+}
+.face.side-l, .face.side-r {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 78px,
+      rgba(0, 0, 0, 0.5) 78px 80px
+    ),
+    linear-gradient(100deg, #4a4e53 0%, #313539 60%, #232629 100%);
+  border: 1px solid rgba(0, 0, 0, 0.6);
+}
+
+/* ---------- front-face details ---------- */
+.detail { position: absolute; left: 7%; width: 86%; }
+
+/* green terminal screen (middle columns) */
+.screen {
+  top: 9%;
+  height: 26%;
+  background: #050b06;
+  border: 1px solid #10160f;
+  border-radius: 2px;
+  overflow: hidden;
+  color: #39ff5a;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 6.5px;
+  line-height: 1.55;
+  padding: 4px 3px;
+  white-space: pre;
+  text-shadow: 0 0 3px rgba(57, 255, 90, 0.7);
+  animation: screen-flicker 3.7s steps(1) infinite;
+}
+.screen::after {           /* scanlines */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    rgba(0, 0, 0, 0.28) 2px 3px
+  );
+  pointer-events: none;
+}
+.screen.secondary { top: 38%; height: 12%; opacity: 0.9; }
+@keyframes screen-flicker {
+  0%, 93%, 100% { opacity: 1; }
+  94%           { opacity: 0.82; }
+  95%           { opacity: 1; }
+  97%           { opacity: 0.9; }
+}
+.talking .screen { animation-duration: 0.9s; }
+
+/* dark inset panel */
+.inset {
+  background: linear-gradient(120deg, #17191c, #0c0e10);
+  border: 1px solid rgba(0, 0, 0, 0.7);
+  border-radius: 2px;
+}
+
+/* vertical orange TARS label (outer-left column) */
+.tars-label {
+  top: 46%;
+  color: #c96a2a;
+  font-family: "Arial Narrow", Arial, sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 2px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  opacity: 0.85;
+}
+
+/* ---------- floor shadow ---------- */
+.tars-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -26px;
+  width: 300px;
+  height: 34px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.55), transparent 65%);
+  filter: blur(4px);
+  transition: transform 0.5s ease;
+}

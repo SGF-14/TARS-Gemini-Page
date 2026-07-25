@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'" />
+  <title>TARS — Gemini Sandbox</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/tars.css" />
+</head>
+<body>
+
+  <!-- looping wallpaper: two stacked videos, JS crossfades them near the loop point -->
+  <div id="wallpaper">
+    <video id="wp-a" class="wp visible" src="assets/wallpaper.mp4" muted playsinline></video>
+    <video id="wp-b" class="wp" src="assets/wallpaper.mp4" muted playsinline></video>
+    <div id="wp-tint"></div>
+  </div>
+
+  <!-- CRT overlay: faint scanlines + vignette over everything -->
+  <div id="crt"></div>
+
+  <!-- the robot -->
+  <div id="stage">
+    <div id="tars-root"></div>
+  </div>
+
+  <!-- header wordmark -->
+  <header id="header">
+    <h1>TARS</h1>
+    <p>GEMINI SANDBOX</p>
+  </header>
+
+  <!-- status pill (click to open API settings) -->
+  <button id="status" class="offline" type="button" title="API settings">CHECKING…</button>
+
+  <!-- dev tools -->
+  <div id="devtools">
+    <button id="devtools-toggle" type="button">DEV TOOLS</button>
+    <div id="devtools-menu" hidden>
+      <label><input type="checkbox" id="opt-freelook" /> free look <span class="dim">(drag)</span></label>
+      <button id="btn-demo" type="button">DEMO SPIN</button>
+      <button id="btn-reset" type="button">RESET ROBOT</button>
+      <button id="btn-settings" type="button">API SETTINGS…</button>
+      <div class="dt-section">column spin — ±360°</div>
+      <div class="dt-slider"><span>C1</span><input type="range" id="spin-0" min="-360" max="360" value="0" /><input type="number" id="spin-0-num" min="-360" max="360" value="0" /></div>
+      <div class="dt-slider"><span>C2</span><input type="range" id="spin-1" min="-360" max="360" value="0" /><input type="number" id="spin-1-num" min="-360" max="360" value="0" /></div>
+      <div class="dt-slider"><span>C3</span><input type="range" id="spin-2" min="-360" max="360" value="0" /><input type="number" id="spin-2-num" min="-360" max="360" value="0" /></div>
+      <div class="dt-slider"><span>C4</span><input type="range" id="spin-3" min="-360" max="360" value="0" /><input type="number" id="spin-3-num" min="-360" max="360" value="0" /></div>
+      <div class="dt-section">outer columns — down</div>
+      <div class="dt-slider"><span>L</span><input type="range" id="lift-0" min="0" max="80" value="0" /><input type="number" id="lift-0-num" min="0" max="80" value="0" /></div>
+      <div class="dt-slider"><span>R</span><input type="range" id="lift-3" min="0" max="80" value="0" /><input type="number" id="lift-3-num" min="0" max="80" value="0" /></div>
+    </div>
+  </div>
+
+  <!-- control bar: extension editors + chat toggle -->
+  <div id="controls">
+    <button class="ext-btn" id="btn-rag" type="button">RAG</button>
+    <button class="ext-btn" id="btn-functions" type="button">FUNCTIONS</button>
+    <button class="ext-btn" id="btn-personalize" type="button">PERSONA</button>
+    <button id="chat-toggle" type="button" title="Toggle chat">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+        <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2Z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- chat panel -->
+  <aside id="chat-panel">
+    <header>TARS <span class="dim">// transmission log</span><button id="chat-clear" type="button">CLEAR</button></header>
+    <div id="messages"></div>
+    <form id="chat-form" autocomplete="off">
+      <input id="chat-input" type="text" placeholder="Type a message…" />
+      <button type="submit">SEND</button>
+    </form>
+  </aside>
+
+  <!-- API settings modal -->
+  <div id="settings-modal" hidden>
+    <div class="vm-card">
+      <h2>GEMINI API</h2>
+      <p>This page talks to Google's Gemini API straight from your browser.
+         Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">aistudio.google.com/apikey</a>.</p>
+      <label class="sm-field">
+        <span>API KEY</span>
+        <span class="sm-keywrap">
+          <input id="sm-key" type="password" placeholder="AIza…" spellcheck="false" />
+          <button id="sm-show" type="button" title="Show/hide">◉</button>
+        </span>
+      </label>
+      <label class="sm-field" id="sm-model-row" hidden>
+        <span>MODEL</span>
+        <select id="sm-model"></select>
+      </label>
+      <p class="vm-note">The key is stored only in this browser (localStorage) and sent only to
+         generativelanguage.googleapis.com. Use a free-tier key; revoke it anytime in AI Studio.</p>
+      <div id="sm-error" hidden></div>
+      <div class="vm-actions">
+        <button id="sm-save" type="button">SAVE</button>
+        <button id="sm-cancel" type="button">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- shared extension editor modal -->
+  <div id="editor-modal" hidden>
+    <div class="vm-card em-card">
+      <h2 id="em-title">EDITOR</h2>
+      <p id="em-hint" class="vm-note"></p>
+      <textarea id="em-text" spellcheck="false"></textarea>
+      <div class="em-foot">
+        <span id="em-count" class="dim"></span>
+        <span id="em-saved" hidden>SAVED ✓</span>
+      </div>
+      <div id="em-error" hidden></div>
+      <div class="vm-actions">
+        <button id="em-save" type="button">SAVE</button>
+        <button id="em-example" type="button">LOAD EXAMPLE</button>
+        <button id="em-clear" type="button">CLEAR</button>
+        <button id="em-cancel" type="button">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/gemini.js"></script>
+  <script src="js/wallpaper.js"></script>
+  <script src="js/tars-robot.js"></script>
+  <script src="js/robot-tools.js"></script>
+  <script src="js/extensions.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
