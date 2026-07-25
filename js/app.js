@@ -70,6 +70,24 @@ document.addEventListener("DOMContentLoaded", () => {
     return div;
   }
 
+  /** Typewriter reveal: word by word, then hand off to renderRich for formatting. */
+  function typeOut(el, text, done) {
+    const words = text.split(/(\s+)/); // keep the whitespace tokens
+    const perTick = words.length > 300 ? 6 : words.length > 140 ? 3 : 1; // long replies type faster
+    el.classList.add("typing");
+    let i = 0;
+    const timer = setInterval(() => {
+      i += perTick;
+      el.textContent = words.slice(0, i).join("");
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      if (i >= words.length) {
+        clearInterval(timer);
+        el.classList.remove("typing");
+        done();
+      }
+    }, 45);
+  }
+
   /** Markdown-lite for assistant replies: ```code blocks```, `inline code`, **bold**. */
   function renderRich(el, text) {
     let h = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -318,13 +336,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       pending.remove();
-      renderRich(addMsg("assistant", ""), finalText);
+      const msgEl = addMsg("assistant", "");
+      typeOut(msgEl, finalText, () => {
+        renderRich(msgEl, finalText);
+        tars.talk(false); // keep the talking bob going while the reply "types"
+      });
       history = contents; // commit the whole turn, tool rounds included
     } catch (err) {
       pending.remove();
       addMsg("assistant", `⚠ ${err instanceof GeminiError ? mapError(err) : err.message}`, "error");
-    } finally {
       tars.talk(false);
+    } finally {
       sendBtn.disabled = false;
       inFlight = false;
       if (statusEl.textContent === "THINKING…") refreshStatus();
