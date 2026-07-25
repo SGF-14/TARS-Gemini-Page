@@ -578,6 +578,44 @@ a { color: var(--green); }
   scrollbar-color: var(--green-dim) transparent;
 }
 
+/* ---------- function-writing guide ---------- */
+#fn-guide {
+  margin-top: 12px;
+  border: 1px solid rgba(57, 255, 90, 0.15);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 11px;
+}
+#fn-guide summary {
+  padding: 9px 12px;
+  letter-spacing: 2px;
+  font-size: 10px;
+  color: rgba(57, 255, 90, 0.7);
+  cursor: pointer;
+  user-select: none;
+}
+#fn-guide summary:hover { color: var(--green); }
+#fn-guide dl {
+  padding: 2px 14px 12px;
+  line-height: 1.65;
+}
+#fn-guide dt {
+  margin-top: 8px;
+  color: #6fd3ff;
+  font-size: 11px;
+}
+#fn-guide dd {
+  margin-left: 0;
+  color: rgba(232, 245, 234, 0.65);
+}
+#fn-guide code {
+  padding: 0 4px;
+  color: #9dff8e;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 3px;
+  font-size: 10.5px;
+}
+
 /* editor modal */
 .em-card { width: min(680px, 94vw); }
 #em-text {
@@ -608,4 +646,52 @@ a { color: var(--green); }
   color: var(--green);
   letter-spacing: 2px;
   animation: msg-in 0.2s ease;
+}
+
+/* ---------- mobile ---------- */
+@media (max-width: 700px) {
+  /* shrink the robot so it fits between the panels */
+  #tars-root { transform: scale(0.62); transform-origin: bottom center; }
+  #stage { padding-bottom: 20vh; }
+
+  #header h1 { font-size: 18px; letter-spacing: 9px; padding-left: 9px; }
+  #header p { font-size: 8px; letter-spacing: 4px; }
+
+  #status {
+    top: 12px; left: 12px;
+    padding: 5px 10px;
+    font-size: 10px; letter-spacing: 1px;
+    max-width: 46vw;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  #bgm-toggle { top: 12px; right: 12px; width: 36px; height: 36px; }
+
+  #devtools { top: 50px; left: 12px; width: min(230px, 62vw); }
+  #devtools-menu { max-height: 55vh; overflow-y: auto; }
+
+  #controls {
+    bottom: 14px;
+    gap: 8px;
+    width: 100vw;
+    justify-content: center;
+    padding: 0 8px;
+  }
+  .ext-btn { padding: 10px 12px; font-size: 10px; letter-spacing: 2px; }
+  .ext-btn.active::after { top: 5px; right: 6px; }
+  #chat-toggle { width: 46px; height: 46px; }
+
+  #chat-panel { width: 100vw; border-left: none; }
+  .msg { font-size: 12.5px; }
+
+  .vm-card { padding: 20px 18px; width: 94vw; }
+  .em-card { width: 96vw; }
+  .code-edit { height: 220px; }
+  #fn-list { max-height: 38vh; }
+  .vm-actions { flex-wrap: wrap; }
+  .vm-actions button { min-width: 40%; }
+}
+
+/* very small phones: stack the control pills tighter */
+@media (max-width: 380px) {
+  .ext-btn { padding: 9px 9px; letter-spacing: 1px; }
 }

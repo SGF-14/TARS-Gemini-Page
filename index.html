@@ -134,6 +134,21 @@
           <textarea id="fn-text" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
         </div>
         <div id="fn-error" hidden></div>
+        <details id="fn-guide">
+          <summary>HOW TO WRITE A FUNCTION</summary>
+          <dl>
+            <dt>"name"</dt>
+            <dd>Required. What the model calls — for the robot use: <code>walk</code>, <code>rotateColumn</code>, <code>liftColumn</code>, <code>demo</code>, <code>stop</code>. Any other name is delivered back to the model as "unknown" (useful for experimenting).</dd>
+            <dt>"description"</dt>
+            <dd>The model reads this to decide <em>when</em> to call the function — write it like an instruction to a colleague.</dd>
+            <dt>"parameters"</dt>
+            <dd>The arguments, as a schema: <code>"type": "OBJECT"</code> with a <code>"properties"</code> map. Types are UPPERCASE: <code>STRING</code>, <code>INTEGER</code>, <code>NUMBER</code>, <code>BOOLEAN</code>. Describe each property — descriptions steer the model's argument choices.</dd>
+            <dt>"required"</dt>
+            <dd>Optional list of property names the model must always provide.</dd>
+            <dt>no arguments?</dt>
+            <dd>Leave <code>"parameters"</code> out entirely (like <code>demo</code> / <code>stop</code>).</dd>
+          </dl>
+        </details>
         <div class="vm-actions">
           <button id="fn-save" type="button">SAVE FUNCTION</button>
           <button id="fn-back" type="button">BACK</button>

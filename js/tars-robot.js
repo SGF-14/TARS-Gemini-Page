@@ -12,7 +12,6 @@ function createTars(root) {
   const NUM_COLS = 4;
   const OUTER = [0, 3];
   const MIDDLE = [1, 2];
-  const STEP_PX = 46;      // ground covered per step
   const LIFT_PX = 16;      // outer-column press / body raise
   const SWING_DEG = -22;   // middle-column forward swing
 
@@ -51,8 +50,7 @@ function createTars(root) {
   const swingX = [0, 0, 0, 0];  // per-column walk swing
   const liftY = [0, 0, 0, 0];   // outer-column downward shift (0..SEG_PX)
   const SEG_PX = 80;            // one panel segment - max downward travel
-  let bodyX = 0;
-  let bodyY = 0;
+  let bodyY = 0;                // walking happens IN PLACE - the body never drifts sideways
   let walking = false;
 
   function applyRotor(i) {
@@ -64,8 +62,7 @@ function createTars(root) {
   }
   function applyBody(durMs) {
     if (durMs != null) body.style.transitionDuration = `${durMs}ms`;
-    body.style.transform = `translateX(${bodyX}px) translateY(${bodyY}px)`;
-    shadow.style.transform = `translateX(calc(-50% + ${bodyX}px))`;
+    body.style.transform = `translateY(${bodyY}px)`;
   }
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -109,10 +106,8 @@ function createTars(root) {
         applyBody(220);
         await wait(230);
 
-        // 2 — middle columns swing forward, body advances
+        // 2 — middle columns swing forward (in place - no sideways drift)
         MIDDLE.forEach((i) => { swingX[i] = SWING_DEG; applyRotor(i); });
-        bodyX += STEP_PX;
-        applyBody(550);
         await wait(560);
 
         // 3 — everything settles back
@@ -160,7 +155,7 @@ function createTars(root) {
       walking = false;
       OUTER.forEach((i) => (slots[i].style.transform = "translateY(0)"));
       for (let i = 0; i < NUM_COLS; i++) { swingX[i] = 0; spinZ[i] = 0; liftY[i] = 0; applyRotor(i); }
-      bodyX = 0; bodyY = 0;
+      bodyY = 0;
       applyBody(400);
       api.idle();
     },

@@ -5,7 +5,7 @@
 const ROBOT_TOOL_DECLS = [
   {
     name: "walk",
-    description: "Walk forward like TARS in the film. One call performs the full step cycle.",
+    description: "Perform TARS's walking motion (in place). One call runs the full step cycle.",
     parameters: {
       type: "OBJECT",
       properties: {
@@ -141,7 +141,7 @@ async function executeFunctionCall(tars, call, ui) {
   try {
     switch (name) {
       case "walk": {
-        const steps = clamp(args.steps ?? 1, 1, 5); // clamp: walk drifts the body sideways
+        const steps = clamp(args.steps ?? 1, 1, 5); // clamp: each step takes ~1.2s
         await tars.walk(steps);
         return { ok: true, detail: `walked ${steps} step(s)` };
       }
